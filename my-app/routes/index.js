@@ -1,9 +1,19 @@
 var express = require('express');
 var router = express.Router();
 
-/* GET home page. */
+
 router.get('/', function(req, res, next) {
-  res.render('index', { title: 'Express' });
+
+    let user = session.auth(req).user
+    let can = session.can(user)
+
+    res.render('index', {
+        title: "Главная страница",
+        user: user,
+        can: can,
+    })
+
+
 });
 
 module.exports = router;

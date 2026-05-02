@@ -11,6 +11,7 @@ const pgp = require('pg-promise')(/* options */)
 const db = pgp('postgres://postgres:admin@localhost:5432/lab_2')
 
 var app = express();
+session = require("./session.js");
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -30,6 +31,11 @@ app.use(function (req, res, next) {
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+let api = require('./routes/api');
+app.use('/api', api);
+let api_auth = require('./routes/api/auth');
+api.use('/auth', api_auth);
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
