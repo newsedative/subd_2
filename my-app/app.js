@@ -4,14 +4,18 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-
 const pgp = require('pg-promise')(/* options */)
 const db = pgp('postgres://postgres:admin@localhost:5432/lab_2')
 
+var indexRouter = require('./routes/index');
+var usersRouter = require('./routes/users');
+var clientsRouter = require('./routes/clients');
+var ordersRouter = require('./routes/orders');
+var paymentsRouter = require('./routes/payments');
+
 var app = express();
-session = require("./session.js");
+
+session = require("./session.js")
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -23,19 +27,24 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-
-app.use(function (req, res, next) {
-  req.db = db;
-  next();
+app.use(function(req,res,next){
+    req.db = db;
+    next();
 })
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-let api = require('./routes/api');
+app.use('/clients', clientsRouter);
+app.use('/orders', ordersRouter);
+app.use('/payments', paymentsRouter);
+
+var api      = require('./routes/api');
 app.use('/api', api);
-let api_auth = require('./routes/api/auth');
+var api_auth = require('./routes/api/auth');
 api.use('/auth', api_auth);
 
+var api_users = require('./routes/api/users');
+api.use('/users', api_users);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -53,13 +62,4 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
-db.one('SELECT $1 AS value', 123)
-.then((data) => {
-  console.log('DATA:', data.value)
-})
-.catch((error) => {
-  console.log('ERROR:', error)
-})
-
 module.exports = app;
-
