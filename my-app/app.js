@@ -7,6 +7,9 @@ var logger = require('morgan');
 const pgp = require('pg-promise')(/* options */)
 const db = pgp('postgres://postgres:admin@localhost:5432/lab_2')
 
+const { connectRedis } = require('./redis');
+const cache = connectRedis();
+
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var clientsRouter = require('./routes/clients');
@@ -29,6 +32,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(function(req,res,next){
     req.db = db;
+    req.cache = cache;
     next();
 })
 

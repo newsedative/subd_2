@@ -1,6 +1,25 @@
 var express = require('express');
 var router = express.Router();
 
+const totalAmountKey = 'total_amount';
+
+async function getTotalAmount(req) {
+    let cachedData = await req.cache.get(totalAmountKey);
+    if (cachedData == null){
+        totalAmount = await req.db.one('SELECT SUM(amount) AS total_amount FROM orders');
+        await req.cache.set(totalAmountKey, totalAmount.total_amount, {EX: 60 * 5}); // Кэшируем на 5 минут
+        console.log('Данные получены из базы данных');
+        return totalAmount.total_amount;
+    }
+    console.log('Данные получены из кэша');
+    return cachedData;
+}
+
+async function invalidateTotalAmountCache(req) {
+    await req.cache.del(totalAmountKey);
+    console.log('Кэш для total_amount удален');
+}
+
 router.get('/', async function(req, res, next) {
 
     let orders = await req.db.any(`
@@ -25,7 +44,8 @@ router.get('/', async function(req, res, next) {
             clients
     `)
     console.log(clients)
-    res.render('orders/list', { title: 'Заказы', orders: orders, clients: clients })
+
+    res.render('orders/list', { title: `Заказы на общую сумму ${await getTotalAmount(req)}`, orders: orders, clients: clients})
 
 });
 
@@ -34,6 +54,7 @@ router.post('/create', async function(req, res, next) {
     let order = req.body
 
     await req.db.none('INSERT INTO orders(label, id_client, amount) VALUES(${label}, ${id_client}, ${amount})', order);
+    await invalidateTotalAmountCache(req);
 
     res.send({msg: ''})
 
