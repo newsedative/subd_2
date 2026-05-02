@@ -1,11 +1,12 @@
 extends ../layout
+
 block content
+    script(src='/javascripts/users.js')
+
     h1= title
-    table
-        tr
+    table#tbl_users
+        tr 
             th id
             th Имя
-        each item in users
-            tr
-                td= item.id
-                td= item.fio
+            th Логин
+            th Роль
