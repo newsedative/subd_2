@@ -4,12 +4,19 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
+// ==========================================
+// 1. ПОДКЛЮЧЕНИЕ БАЗ ДАННЫХ
+// ==========================================
+
+// --- PostgreSQL ---
 const pgp = require('pg-promise')(/* options */);
 const db = pgp('postgres://postgres:admin@localhost:5432/lab_2');
 
+// --- Redis ---
 const { connectRedis } = require('./redis');
 const cache = connectRedis();
 
+// --- MongoDB ---
 const { MongoClient } = require('mongodb');
 const url = 'mongodb://localhost:27017'; 
 const client = new MongoClient(url);
@@ -28,6 +35,19 @@ async function startMongo() {
 }
 startMongo();
 
+// --- ClickHouse ---
+const { createClient } = require('@clickhouse/client');
+const clickhouse = createClient({
+    url: 'http://localhost:8123', // Стандартный HTTP-порт ClickHouse в Docker
+    username: 'dasha',          // Твое имя пользователя
+    password: '123456',         // Твой пароль
+    database: 'default'         // База по умолчанию
+});
+
+
+// ==========================================
+// 2. ИМПОРТ РОУТЕРОВ
+// ==========================================
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 var clientsRouter = require('./routes/clients');
@@ -38,6 +58,9 @@ var app = express();
 
 session = require("./session.js");
 
+// ==========================================
+// 3. БАЗОВЫЕ НАСТРОЙКИ (MIDDLEWARES)
+// ==========================================
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
@@ -47,17 +70,23 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ❗️ ГЛАВНЫЙ БЛОК ДЛЯ БАЗ ДАННЫХ ❗️
 app.use(function(req, res, next) {
-    req.db = db;           
-    req.cache = cache;     
+    req.db = db;           // Postgres
+    req.cache = cache;     // Redis
     
     if (mongoDb) {
-        req.mongo = mongoDb; 
+        req.mongo = mongoDb; // MongoDB
     }
+    
+    req.clickhouse = clickhouse; // ClickHouse
+    
     next();
 });
 
-
+// ==========================================
+// 4. МАРШРУТИЗАЦИЯ (РОУТЫ)
+// ==========================================
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/clients', clientsRouter);
@@ -73,6 +102,9 @@ api.use('/auth', api_auth);
 var api_users = require('./routes/api/users');
 api.use('/users', api_users);
 
+// ==========================================
+// 5. ОБРАБОТКА ОШИБОК
+// ==========================================
 app.use(function(req, res, next) {
   next(createError(404));
 });

@@ -16,3 +16,24 @@ block content
           br
           label Сумма
           input(type='text', disabled=true, value=order.amount)
+          br
+          button(type="button" id="btn-complete" data-id=order.id) Завершить заказ
+
+    script.
+      document.getElementById('btn-complete').addEventListener('click', async function() {
+        const orderId = this.getAttribute('data-id');
+        
+        const response = await fetch(`/orders/${orderId}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status_id: 2 }) // 2 — это ID нового статуса
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert(result.message); // Увидим сообщение об успехе и записи в ClickHouse
+          window.location.reload(); // Перезагрузим, чтобы увидеть обновленный статус
+        } else {
+          alert('Ошибка при обновлении');
+        }
+      });
